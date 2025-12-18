@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud MDR Notification Mirror Tool - User Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                padding: 20px;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            h1, h2 {
+                page-break-after: avoid;
+            }
+            table, pre {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo-placeholder {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #0066cc;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .version-info {
+            background: #f0f7ff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        /* Download button */
+        .download-btn {
+            background: #0066cc;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+
+        .download-btn:hover {
+            background: #0052a3;
+        }
+
+        /* Section styles */
+        h2 {
+            color: #0066cc;
+            font-size: 22px;
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        h3 {
+            color: #333;
+            font-size: 18px;
+            margin: 20px 0 10px 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 15px 0 15px 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        th {
+            background: #0066cc;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #f0f7ff;
+        }
+
+        /* Code blocks */
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            background: #f9f9f9;
+            border-left: 4px solid #ccc;
+            padding: 15px 20px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #555;
+        }
+
+        /* Quick reference card */
+        .quick-ref {
+            background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .quick-ref h3 {
+            color: white;
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+
+        .quick-ref code {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .quick-ref ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .quick-ref li {
+            padding: 5px 0;
+        }
+
+        .quick-ref li:before {
+            content: "✓ ";
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 30px;
+            margin-top: 40px;
+            border-top: 2px solid #e0e0e0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Analogy box */
+        .analogy-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .analogy-box h4 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+
+        .analogy-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .analogy-step {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .analogy-step .icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .analogy-arrow {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            color: #0066cc;
+        }
+
+        /* TOC */
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .toc li {
+            padding: 5px 0;
+        }
+
+        .toc a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-placeholder">[Your Company Logo]</div>
+        <h1>Cloud MDR Notification Mirror Tool</h1>
+        <p class="subtitle">User Guide for CompassOne Partners</p>
+        <div class="version-info">
+            <strong>Version:</strong> 1.1.0 | <strong>Last Updated:</strong> December 2024
+        </div>
+    </div>
+
+    <button class="download-btn no-print" onclick="window.print()">
+        📄 Download as PDF (Print to PDF)
+    </button>
+
+    <div class="toc">
+        <h3>Table of Contents</h3>
+        <ul>
+            <li><a href="#overview">1. Overview</a></li>
+            <li><a href="#what-is-api">2. What is an API?</a></li>
+            <li><a href="#key-terms">3. Key Terms Explained</a></li>
+            <li><a href="#when-to-use">4. When Would I Use This Tool?</a></li>
+            <li><a href="#before-start">5. Before You Start</a></li>
+            <li><a href="#how-to-use">6. How to Use the Tool</a></li>
+            <li><a href="#understanding-results">7. Understanding the Results</a></li>
+            <li><a href="#notification-types">8. Notification Types Explained</a></li>
+            <li><a href="#faq">9. Frequently Asked Questions</a></li>
+            <li><a href="#quick-reference">10. Quick Reference Card</a></li>
+        </ul>
+    </div>
+
+    <h2 id="overview">1. Overview</h2>
+    <p>This guide explains how to use the <strong>Cloud MDR Notification Mirror Tool</strong> to manage email notification settings across all your tenants at once, saving you time and ensuring consistency.</p>
+
+    <h2 id="what-is-api">2. What Does This Tool Do?</h2>
+    <p>Imagine you manage 50 different client organizations (tenants) in CompassOne. Each tenant can receive email notifications about security events like:</p>
+    <ul>
+        <li><strong>Google Workspace alerts</strong> (CloudResponseNotification)</li>
+        <li><strong>Cisco Duo alerts</strong> (CiscoDuoNotification)</li>
+        <li><strong>Microsoft 365 alerts</strong> (MS365DefenseNotification)</li>
+        <li><strong>Microsoft 365 permission change alerts</strong> (MS365DefenseNewPermsNotification)</li>
+    </ul>
+    <p>Normally, you would need to log into each tenant individually and configure these settings one by one. That's 50 different configurations!</p>
+    
+    <div class="success-box">
+        <strong>This tool automates that process.</strong> You set up one tenant the way you want it (your "template"), and the tool copies those settings to all your other tenants automatically.
+    </div>
+
+    <h3>What is an API? (Simple Explanation)</h3>
+    
+    <div class="analogy-box">
+        <h4>🍽️ The Restaurant Analogy</h4>
+        <p>Think of an <strong>API</strong> (Application Programming Interface) as a <strong>waiter in a restaurant</strong>:</p>
+        <div class="analogy-steps">
+            <div class="analogy-step">
+                <div class="icon">👤</div>
+                <strong>You</strong><br>
+                <small>(The Customer)</small>
+            </div>
+            <div class="analogy-arrow">→</div>
+            <div class="analogy-step">
+                <div class="icon">🤵</div>
+                <strong>API</strong><br>
+                <small>(The Waiter)</small>
+            </div>
+            <div class="analogy-arrow">→</div>
+            <div class="analogy-step">
+                <div class="icon">👨‍🍳</div>
+                <strong>Server</strong><br>
+                <small>(The Kitchen)</small>
+            </div>
+        </div>
+        <br>
+        <p><strong>In this tool:</strong></p>
+        <ul>
+            <li><strong>You</strong> = This PowerShell script</li>
+            <li><strong>The waiter</strong> = The Blackpoint API</li>
+            <li><strong>The kitchen</strong> = Blackpoint's servers that store your tenant settings</li>
+        </ul>
+        <p>The script "talks" to Blackpoint's systems using the API to read and change notification settings, just like you would do manually in the web interface—but much faster.</p>
+    </div>
+
+    <h2 id="key-terms">3. Key Terms Explained</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Term</th>
+                <th>What It Means</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Tenant</strong></td>
+                <td>A client organization you manage in CompassOne</td>
+            </tr>
+            <tr>
+                <td><strong>Template Tenant</strong></td>
+                <td>The tenant whose settings you want to copy to others</td>
+            </tr>
+            <tr>
+                <td><strong>API Key</strong></td>
+                <td>A secret password that proves you're authorized to make changes</td>
+            </tr>
+            <tr>
+                <td><strong>Blocked</strong></td>
+                <td>The notification is turned OFF (you won't receive these emails)</td>
+            </tr>
+            <tr>
+                <td><strong>Allowed</strong></td>
+                <td>The notification is turned ON (you will receive these emails)</td>
+            </tr>
+            <tr>
+                <td><strong>Dry-Run</strong></td>
+                <td>A practice mode that shows what would happen without making real changes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 id="when-to-use">4. When Would I Use This Tool?</h2>
+    <h3>Common Scenarios:</h3>
+    
+    <p><strong>1. New Partner Onboarding</strong></p>
+    <blockquote>"I just added 20 new tenants and need to configure their notification settings to match our standards."</blockquote>
+
+    <p><strong>2. Policy Changes</strong></p>
+    <blockquote>"We decided to stop receiving Cisco Duo alerts for all tenants. I need to update 100+ tenants."</blockquote>
+
+    <p><strong>3. Consistency Check</strong></p>
+    <blockquote>"I want to make sure all our tenants have the same notification settings."</blockquote>
+
+    <p><strong>4. Time Savings</strong></p>
+    <blockquote>"I don't have time to manually configure each tenant one by one."</blockquote>
+
+    <div class="page-break"></div>
+
+    <h2 id="before-start">5. Before You Start</h2>
+    <h3>What You'll Need:</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Requirement</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>PowerShell</strong></td>
+                <td>
+                    <strong>Windows:</strong> Already installed (search for "PowerShell" in Start menu)<br>
+                    <strong>Mac/Linux:</strong> Install PowerShell Core from Microsoft
+                </td>
+            </tr>
+            <tr>
+                <td><strong>API Key</strong></td>
+                <td>
+                    Get this from your CompassOne administrator or API settings page<br>
+                    <span style="color: red;">⚠️ Keep it secret! Never share your API key</span>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Template Tenant ID</strong></td>
+                <td>
+                    A unique identifier like: <code>345f28b8-b4e2-4521-9202-d1de87ae6ad1</code><br>
+                    The script can show you a list if you don't know the ID
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 id="how-to-use">6. How to Use the Tool (Step-by-Step)</h2>
+
+    <h3>Step 1: Open PowerShell</h3>
+    <ul>
+        <li><strong>Windows:</strong> Press <code>Win + X</code>, then select "Windows PowerShell"</li>
+        <li><strong>Mac/Linux:</strong> Open Terminal and type <code>pwsh</code></li>
+    </ul>
+
+    <h3>Step 2: Navigate to the Script Location</h3>
+    <pre>cd C:\path\to\your\scripts</pre>
+
+    <h3>Step 3: Run the Script</h3>
+    <p><strong>Option A: Practice Mode (Recommended for First Time)</strong></p>
+    <pre>.\Mirror-CloudMdrNotifications.ps1 -DryRun</pre>
+    <p>This shows what would happen without making any changes.</p>
+
+    <p><strong>Option B: Live Mode (Makes Real Changes)</strong></p>
+    <pre>.\Mirror-CloudMdrNotifications.ps1</pre>
+
+    <h3>Step 4: Follow the Prompts</h3>
+    <p>The script will ask you questions. Here's what to expect:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Prompt</th>
+                <th>What to Enter</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Run in dry-run mode? [yes/no]</code></td>
+                <td>Type <code>yes</code> to practice, <code>no</code> to make real changes</td>
+            </tr>
+            <tr>
+                <td><code>Enter API URL</code></td>
+                <td>Just press Enter to use the default</td>
+            </tr>
+            <tr>
+                <td><code>Enter your API Key</code></td>
+                <td>Paste your API key (it will be hidden)</td>
+            </tr>
+            <tr>
+                <td><code>List Tenants? [yes/no]</code></td>
+                <td>Type <code>yes</code> to see all your tenants and their IDs</td>
+            </tr>
+            <tr>
+                <td><code>Enter the Template Tenant ID</code></td>
+                <td>Paste the ID of the tenant to copy settings FROM</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Step 5: Review and Confirm</h3>
+    <p>The script will show you:</p>
+    <ul>
+        <li>The template tenant's current settings</li>
+        <li>What changes will be made</li>
+        <li>How many tenants will be updated</li>
+    </ul>
+    <p>Type <code>yes</code> to proceed or <code>no</code> to cancel.</p>
+
+    <h2 id="understanding-results">7. Understanding the Results</h2>
+    <p>After the script runs, you'll see a summary like this:</p>
+    <pre>Summary Report:
+  Template Tenant:     Acme Corporation
+  Tenants Processed:   47
+  Blocks Added:        12
+  Blocks Removed:      8
+  No Changes Needed:   27
+  Errors:              0</pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>What It Means</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Tenants Processed</strong></td>
+                <td>How many tenants the script checked</td>
+            </tr>
+            <tr>
+                <td><strong>Blocks Added</strong></td>
+                <td>How many notifications were turned OFF</td>
+            </tr>
+            <tr>
+                <td><strong>Blocks Removed</strong></td>
+                <td>How many notifications were turned ON</td>
+            </tr>
+            <tr>
+                <td><strong>No Changes Needed</strong></td>
+                <td>Tenants that already had correct settings</td>
+            </tr>
+            <tr>
+                <td><strong>Errors</strong></td>
+                <td>Problems that occurred (0 is good!)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2 id="notification-types">8. Notification Types Explained</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Notification Type</th>
+                <th>What Triggers It</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>CloudResponseNotification</strong></td>
+                <td>Security events detected in Google Workspace (Gmail, Google Drive, etc.)</td>
+            </tr>
+            <tr>
+                <td><strong>CiscoDuoNotification</strong></td>
+                <td>Security events from Cisco Duo multi-factor authentication</td>
+            </tr>
+            <tr>
+                <td><strong>MS365DefenseNotification</strong></td>
+                <td>Security events in Microsoft 365 (Outlook, OneDrive, SharePoint, etc.)</td>
+            </tr>
+            <tr>
+                <td><strong>MS365DefenseNewPermsNotification</strong></td>
+                <td>When new permissions are granted in Microsoft 365 applications</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-box">
+        <strong>Blocked vs. Allowed</strong><br>
+        <ul>
+            <li><strong>BLOCKED</strong> = You will NOT receive email notifications for this type</li>
+            <li><strong>ALLOWED</strong> = You WILL receive email notifications for this type</li>
+        </ul>
+    </div>
+
+    <h2 id="faq">9. Frequently Asked Questions</h2>
+
+    <h3>Is this safe to use?</h3>
+    <p>Yes! The script includes several safety features:</p>
+    <ul>
+        <li><strong>Dry-run mode</strong> lets you preview changes first</li>
+        <li><strong>Confirmation prompts</strong> before making changes</li>
+        <li><strong>Detailed logging</strong> so you can see exactly what happened</li>
+    </ul>
+
+    <h3>Can I undo changes?</h3>
+    <p>Yes. Simply run the script again with a different template tenant, or manually change settings in the CompassOne web interface.</p>
+
+    <h3>What if I make a mistake?</h3>
+    <p>If you're in dry-run mode, nothing actually changes. If you made real changes, you can:</p>
+    <ol>
+        <li>Run the script again with correct settings</li>
+        <li>Manually fix settings in the web interface</li>
+    </ol>
+
+    <h3>How long does it take?</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Number of Tenants</th>
+                <th>Estimated Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>10 tenants</td>
+                <td>~1-2 minutes</td>
+            </tr>
+            <tr>
+                <td>50 tenants</td>
+                <td>~5-10 minutes</td>
+            </tr>
+            <tr>
+                <td>100+ tenants</td>
+                <td>~15-20 minutes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>What if the script stops with an error?</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Error</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>"Authentication failed"</td>
+                <td>Check that your API key is correct</td>
+            </tr>
+            <tr>
+                <td>"Rate limit exceeded"</td>
+                <td>Wait a few minutes and try again</td>
+            </tr>
+            <tr>
+                <td>"Tenant not found"</td>
+                <td>Verify the tenant ID is correct</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2 id="quick-reference">10. Quick Reference Card</h2>
+    <div class="quick-ref">
+        <h3>CLOUD MDR NOTIFICATION MIRROR - QUICK REFERENCE</h3>
+        
+        <p><strong>PRACTICE MODE (no changes):</strong></p>
+        <pre style="background: rgba(0,0,0,0.3);">.\Mirror-CloudMdrNotifications.ps1 -DryRun</pre>
+        
+        <p><strong>LIVE MODE (makes changes):</strong></p>
+        <pre style="background: rgba(0,0,0,0.3);">.\Mirror-CloudMdrNotifications.ps1</pre>
+        
+        <p><strong>WHAT YOU NEED:</strong></p>
+        <ul>
+            <li>API Key (from your administrator)</li>
+            <li>Template Tenant ID (or use list feature)</li>
+        </ul>
+        
+        <p><strong>NOTIFICATION TYPES:</strong></p>
+        <ul>
+            <li>CloudResponseNotification (Google Workspace)</li>
+            <li>CiscoDuoNotification (Cisco Duo)</li>
+            <li>MS365DefenseNotification (Microsoft 365)</li>
+            <li>MS365DefenseNewPermsNotification (M365 Permissions)</li>
+        </ul>
+    </div>
+
+    <div class="warning-box">
+        <strong>Need Help?</strong><br>
+        If you encounter issues:
+        <ol>
+            <li>Run in dry-run mode first to test without making changes</li>
+            <li>Check your API key is valid and has correct permissions</li>
+            <li>Contact Blackpoint Support if problems persist</li>
+        </ol>
+    </div>
+
+    <div class="footer">
+        <p><strong>Cloud MDR Notification Mirror Tool</strong></p>
+        <p>Version 1.1.0 | December 2024</p>
+        <p>© Blackpoint Cyber - All Rights Reserved</p>
+    </div>
+
+</body>
+</html>
