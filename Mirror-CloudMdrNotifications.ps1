@@ -12,7 +12,6 @@
     - CiscoDuoNotification (Cisco Duo security alerts)
     - MS365DefenseNotification (Microsoft 365 security alerts)
     - MS365DefenseNewPermsNotification (Microsoft 365 new permissions alerts)
-    - MdeNewPermsNotification (Microsoft Defender for Endpoint new permissions alerts)
 
 .PARAMETER DryRun
     When specified, the script will log what changes it would make without actually making them.
@@ -47,8 +46,7 @@ $CloudMdrNotificationTypes = @(
     "CloudResponseNotification",         # Google Workspace security alerts
     "CiscoDuoNotification",              # Cisco Duo security alerts
     "MS365DefenseNotification",          # Microsoft 365 security alerts
-    "MS365DefenseNewPermsNotification",  # Microsoft 365 new permissions alerts
-    "MdeNewPermsNotification"            # Microsoft Defender for Endpoint new permissions alerts
+    "MS365DefenseNewPermsNotification"   # Microsoft 365 new permissions alerts
 )
 
 # API pagination settings
