@@ -134,6 +134,11 @@
       setPill(data.signal.status);
       document.getElementById("alloc").textContent = data.signal.recommended_allocation_pct_of_target + "%";
       document.getElementById("asof").textContent = "As of " + data.as_of + " (generated " + data.generated_at_utc + ")";
+      // Email status (optional)
+      if (data.email && data.email.enabled) {
+        const extra = " | email: " + (data.email.sent ? ("sent @ " + data.email.sent_at_utc) : ("not sent" + (data.email.throttled ? " (throttled)" : ""))) + (data.email.error ? (" | error: " + data.email.error) : "");
+        document.getElementById("asof").textContent += extra;
+      }
 
       document.getElementById("dd").textContent = pct(data.spx.drawdown);
       document.getElementById("vix").textContent = fmt(data.vix.level);
