@@ -2,6 +2,8 @@
   "start": "2006-01-01",
   "end": null,
   "top_n": 15,
+  "min_history_months": 36,
+  "max_abs_monthly_ret": 2.0,
   "tickers": [
     "KSA",
     "UAE",

@@ -47,6 +47,48 @@ Outputs:
 - `analysis/out/rankings.csv`: metrics + score per ticker
 - `analysis/out/rankings.md`: top-N table
 
+## New: build a universe from `JerBouma/FinanceDatabase`
+
+If you don’t want to hand-maintain tickers, you can generate a universe from **FinanceDatabase** (equity metadata including `country`, `exchange`, `sector`, `industry`, `market_cap`, etc.).
+
+Note: the current implementation supports **FinanceDatabase equities** (not ETFs) because the ETF table in the package doesn’t consistently include country-level fields.
+
+### Option A: generate a ticker list + config file
+
+```bash
+python3 analysis/build_universe.py \
+  --countries "Saudi Arabia" "Qatar" "United Arab Emirates" "India" "Indonesia" "Mexico" "Brazil" "Chile" "Peru" \
+  --top-n-per-country 40 \
+  --min-market-cap 5000000000 \
+  --out-config analysis/config.generated.json \
+  --out-meta analysis/universe_meta.csv
+
+python3 analysis/regime_screen.py \
+  --config analysis/config.generated.json \
+  --outdir analysis/out
+```
+
+### Option B: generate inside `regime_screen.py` via config `"universe"`
+
+Instead of `"tickers": [...]`, your config can include:
+
+```json
+{
+  "start": "2006-01-01",
+  "end": null,
+  "top_n": 25,
+  "universe": {
+    "source": "financedatabase",
+    "type": "equities",
+    "countries": ["Saudi Arabia", "Qatar", "United Arab Emirates", "India", "Indonesia", "Mexico", "Brazil", "Chile", "Peru"],
+    "top_n_per_country": 40,
+    "min_market_cap": 5000000000
+  }
+}
+```
+
+When you run the screen, it will write `analysis/out/universe_meta.csv` with the tickers and metadata it selected.
+
 ## How to adapt to your criteria
 
 ### Capital Flow Inversion (proxy ideas)

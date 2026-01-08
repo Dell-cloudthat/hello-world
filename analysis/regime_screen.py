@@ -145,9 +145,66 @@ def _download_yf_monthly_levels(
 
 def _load_config(path: Path) -> dict[str, Any]:
     cfg = json.loads(path.read_text(encoding="utf-8"))
-    if "tickers" not in cfg or not isinstance(cfg["tickers"], list) or not cfg["tickers"]:
-        raise ValueError("Config must include non-empty list field: 'tickers'")
     return cfg
+
+
+def _resolve_tickers(cfg: dict[str, Any], outdir: Path) -> tuple[list[str], Path | None]:
+    """
+    Returns (tickers, universe_meta_csv_path_or_None).
+
+    Config supports either:
+    - explicit "tickers": [...]
+    - or a generated universe:
+        "universe": {
+          "source": "financedatabase",
+          "type": "equities",
+          "countries": [...],
+          "top_n_per_country": 50,
+          "min_market_cap": 5000000000,
+          "exchanges": ["..."],
+          "sectors": ["..."],
+          "industries": ["..."]
+        }
+    """
+    if "tickers" in cfg and isinstance(cfg["tickers"], list) and cfg["tickers"]:
+        tickers = [str(t).strip().upper() for t in cfg["tickers"] if str(t).strip()]
+        return tickers, None
+
+    uni = cfg.get("universe")
+    if not isinstance(uni, dict):
+        raise ValueError("Config must include either non-empty 'tickers' or a 'universe' object")
+
+    source = str(uni.get("source", "")).strip().lower()
+    utype = str(uni.get("type", "")).strip().lower()
+    if source != "financedatabase":
+        raise ValueError(f"Unsupported universe source: {source!r}")
+    if utype != "equities":
+        raise ValueError(f"Unsupported universe type: {utype!r} (only 'equities' supported)")
+
+    # Import only when needed (keeps base script usable without financedatabase)
+    from universe_financedb import EquityUniverseSpec, build_equities_universe
+
+    countries = uni.get("countries", [])
+    if not isinstance(countries, list) or not countries:
+        raise ValueError("Universe must include non-empty list: universe.countries")
+
+    spec = EquityUniverseSpec(
+        countries=[str(c) for c in countries],
+        top_n_per_country=int(uni.get("top_n_per_country", 50)),
+        min_market_cap=(
+            None
+            if uni.get("min_market_cap", None) is None
+            else float(uni.get("min_market_cap"))
+        ),
+        exchanges=uni.get("exchanges", None),
+        sectors=uni.get("sectors", None),
+        industries=uni.get("industries", None),
+    )
+    meta = build_equities_universe(spec)
+    meta_path = outdir / "universe_meta.csv"
+    meta.to_csv(meta_path, index=True)
+    tickers = [str(t).strip().upper() for t in meta.index.tolist()]
+    return tickers, meta_path
 
 
 def run(
@@ -161,9 +218,11 @@ def run(
     regime_cfg: RegimeConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     cfg = _load_config(cfg_path)
-    tickers: list[str] = [str(t).strip().upper() for t in cfg["tickers"]]
-
     outdir.mkdir(parents=True, exist_ok=True)
+    tickers, universe_meta_path = _resolve_tickers(cfg, outdir)
+
+    if universe_meta_path is not None:
+        cfg["universe_meta_csv"] = str(universe_meta_path)
 
     # --- Regime definitions from DataHub core datasets ---
     spx = _read_series_csv(sp500_csv, date_col="Date", value_col="SP500")
@@ -197,7 +256,7 @@ def run(
 
     px_m = _download_yf_monthly_levels(tickers=tickers, start=start, end=end)
     px_m = px_m.sort_index()
-    r_m = px_m.pct_change()
+    r_m = px_m.pct_change(fill_method=None)
 
     # Align to regime calendar
     common_idx = regimes.index.intersection(r_m.index)
@@ -206,6 +265,8 @@ def run(
 
     # --- Metrics ---
     qual = cfg.get("qualitative", {}) or {}
+    min_history_months = int(cfg.get("min_history_months", 36))
+    max_abs_monthly_ret = float(cfg.get("max_abs_monthly_ret", 2.0))
     weights = cfg.get(
         "weights",
         {
@@ -228,7 +289,10 @@ def run(
     rows: list[dict[str, Any]] = []
     for t in tickers:
         tr = r_a[t].dropna()
-        if tr.empty:
+        if tr.empty or tr.shape[0] < min_history_months:
+            continue
+        # Basic data quality guardrail (Yahoo can contain bad series / splits / stubs)
+        if (tr.abs() > max_abs_monthly_ret).any():
             continue
         levels = px_m[t].dropna()
 

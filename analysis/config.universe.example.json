@@ -1,0 +1,33 @@
+{
+  "start": "2006-01-01",
+  "end": null,
+  "top_n": 25,
+  "min_history_months": 36,
+  "max_abs_monthly_ret": 2.0,
+  "universe": {
+    "source": "financedatabase",
+    "type": "equities",
+    "countries": [
+      "Saudi Arabia",
+      "Qatar",
+      "United Arab Emirates",
+      "India",
+      "Indonesia",
+      "Mexico",
+      "Brazil",
+      "Chile",
+      "Peru"
+    ],
+    "top_n_per_country": 40,
+    "min_market_cap": 5000000000
+  },
+  "weights": {
+    "us_down_mean": 0.4,
+    "us_down_outperf_rate": 0.25,
+    "overall_cagr": 0.15,
+    "drawdown_penalty": 0.2,
+    "qualitative": 0.0
+  },
+  "qualitative": {}
+}
+
