@@ -1,0 +1,45 @@
+{
+  "start": "2006-01-01",
+  "end": null,
+  "top_n": 15,
+  "tickers": [
+    "KSA",
+    "UAE",
+    "QAT",
+    "INDA",
+    "EIDO",
+    "VNM",
+    "EWW",
+    "EWZ",
+    "ECH",
+    "EPU"
+  ],
+  "weights": {
+    "us_down_mean": 0.4,
+    "us_down_outperf_rate": 0.25,
+    "overall_cagr": 0.15,
+    "drawdown_penalty": 0.2,
+    "qualitative": 0.0
+  },
+  "qualitative": {
+    "KSA": {
+      "capital_flow_inversion": 0.8,
+      "state_aligned_balance_sheets": 0.9,
+      "fragmentation_beneficiary": 0.8,
+      "low_western_narrative": 0.6
+    },
+    "INDA": {
+      "capital_flow_inversion": 0.6,
+      "state_aligned_balance_sheets": 0.5,
+      "fragmentation_beneficiary": 0.7,
+      "low_western_narrative": 0.3
+    },
+    "EWW": {
+      "capital_flow_inversion": 0.7,
+      "state_aligned_balance_sheets": 0.4,
+      "fragmentation_beneficiary": 0.8,
+      "low_western_narrative": 0.4
+    }
+  }
+}
+
