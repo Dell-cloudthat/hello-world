@@ -1,13 +1,14 @@
 <html>
 <head>
-<title>Hello World!</title>
+<title>International Rotation Alerts</title>
 </head>
 <body>
-	<h1>Hello World!</h1>
+	<h2>International Rotation Alerts</h2>
 	<p>
-		It is now
-		<%= new java.util.Date() %></p>
-	<p>
-		You are coming from 
-		<%= request.getRemoteAddr()  %></p>
+		<a href="dashboard.jsp">Open the dashboard</a>
+	</p>
+	<p class="muted">
+		Server time: <%= new java.util.Date() %> &nbsp;|&nbsp;
+		Client IP: <%= request.getRemoteAddr()  %>
+	</p>
 </body>
