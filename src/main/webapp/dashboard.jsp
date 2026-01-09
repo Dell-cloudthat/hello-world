@@ -158,7 +158,7 @@
     }
 
     function drawMultiChart(canvasId, seriesList, options) {
-      // seriesList: [{name, values}]
+      // seriesList: [{name, values}] where all values arrays share the same date axis (options.dates)
       const c = document.getElementById(canvasId);
       const ctx = c.getContext("2d");
       const w = c.width, h = c.height;
@@ -173,6 +173,10 @@
       const minV = Math.min(...all);
       const maxV = Math.max(...all);
       const range = (maxV - minV) || 1;
+      const yPad = range * 0.06; // breathing room
+      const yMin = minV - yPad;
+      const yMax = maxV + yPad;
+      const yRange = (yMax - yMin) || 1;
 
       // Axes
       ctx.strokeStyle = "#ddd";
@@ -187,7 +191,7 @@
       ctx.font = "12px Arial";
       for (let i = 0; i <= 4; i++) {
         const y = padT + innerH - (i / 4) * innerH;
-        const v = minV + (i / 4) * range;
+        const v = yMin + (i / 4) * yRange;
         ctx.strokeStyle = "#f0f0f0";
         ctx.beginPath();
         ctx.moveTo(padL, y);
@@ -196,14 +200,45 @@
         ctx.fillText(options.formatY(v), 6, y + 4);
       }
 
+      // Baseline at 100 (if in range)
+      if (yMin <= 100 && yMax >= 100) {
+        const y100 = padT + innerH - ((100 - yMin) / yRange) * innerH;
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padL, y100);
+        ctx.lineTo(padL + innerW, y100);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // X ticks (dates)
+      const dates = options.dates || [];
+      if (dates.length > 2) {
+        ctx.fillStyle = "#666";
+        ctx.font = "11px Arial";
+        const ticks = 4;
+        for (let i = 0; i <= ticks; i++) {
+          const idx = Math.round((i / ticks) * (dates.length - 1));
+          const x = padL + (idx / (dates.length - 1)) * innerW;
+          ctx.strokeStyle = "#f7f7f7";
+          ctx.beginPath();
+          ctx.moveTo(x, padT);
+          ctx.lineTo(x, padT + innerH);
+          ctx.stroke();
+          const label = String(dates[idx]);
+          ctx.fillText(label, Math.max(padL, x - 28), padT + innerH + 16);
+        }
+      }
+
       const palette = ["#1256cc", "#cc1f1a", "#0f7b6c", "#7b3fe4", "#c45b00"];
       seriesList.forEach((s, idx) => {
         ctx.strokeStyle = palette[idx % palette.length];
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         for (let i = 0; i < s.values.length; i++) {
           const x = padL + (i / (s.values.length - 1)) * innerW;
-          const y = padT + innerH - ((s.values[i] - minV) / range) * innerH;
+          const y = padT + innerH - ((s.values[i] - yMin) / yRange) * innerH;
           if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -212,16 +247,19 @@
       // Legend
       ctx.font = "12px Arial";
       seriesList.forEach((s, idx) => {
+        const last = s.values[s.values.length - 1];
+        const first = s.values[0];
+        const chg = first ? ((last / first) - 1) : 0;
         ctx.fillStyle = palette[idx % palette.length];
         ctx.fillRect(padL + idx * 120, 6, 10, 10);
         ctx.fillStyle = "#111";
-        ctx.fillText(s.name, padL + idx * 120 + 14, 15);
+        ctx.fillText(s.name + " " + last.toFixed(0) + " (" + (chg * 100).toFixed(1) + "%)", padL + idx * 120 + 14, 15);
       });
     }
 
     let selectedTicker = null;
     let selectedSnapshot = null;
-    let compare = []; // [{ticker, seriesDates, seriesValues}]
+    let compare = []; // [{ticker, dates: [...], values: [...]}]
 
     async function loadTicker(ticker) {
       selectedTicker = ticker;
@@ -280,10 +318,37 @@
         return;
       }
 
-      // Use shortest common length to keep x aligned
-      const minLen = Math.min(...compare.map(x => x.values.length));
-      const seriesList = compare.map(x => ({ name: x.ticker, values: x.values.slice(-minLen) }));
-      drawMultiChart("cmpChart", seriesList, { formatY: (v)=>v.toFixed(0) });
+      // ACCURACY FIX:
+      // Align all series on the same calendar dates (intersection of date strings).
+      const sets = compare.map(s => new Set(s.dates));
+      let common = sets[0];
+      for (let i = 1; i < sets.length; i++) {
+        const next = new Set();
+        common.forEach(d => { if (sets[i].has(d)) next.add(d); });
+        common = next;
+      }
+      let commonDates = Array.from(common).sort(); // YYYY-MM-DD sorts lexicographically
+      if (commonDates.length === 0) return;
+
+      // Keep last ~200 points for readability
+      if (commonDates.length > 220) commonDates = commonDates.slice(-220);
+
+      // Build aligned values
+      const aligned = compare.map(s => {
+        const map = {};
+        for (let i = 0; i < s.dates.length; i++) map[s.dates[i]] = s.values[i];
+        const vals = commonDates.map(d => map[d]);
+        return { name: s.ticker, values: vals };
+      });
+
+      // Downsample (if still too dense)
+      const L = commonDates.length;
+      let step = 1;
+      if (L > 220) step = Math.ceil(L / 220);
+      const dsDates = commonDates.filter((_, i) => i % step === 0);
+      const dsAligned = aligned.map(s => ({ name: s.name, values: s.values.filter((_, i) => i % step === 0) }));
+
+      drawMultiChart("cmpChart", dsAligned, { dates: dsDates, formatY: (v)=>v.toFixed(0) });
     }
 
     async function refresh() {
@@ -358,7 +423,7 @@
         document.getElementById("compareHint").textContent = "(compare limit: 5)";
         return;
       }
-      compare.push({ ticker: t, values: selectedSnapshot.series.norm_100 });
+      compare.push({ ticker: t, dates: selectedSnapshot.series.dates, values: selectedSnapshot.series.norm_100 });
       renderCompare();
       document.getElementById("compareHint").textContent = "";
     };
