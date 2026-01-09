@@ -1,0 +1,34 @@
+{
+  "start": "2006-01-01",
+  "end": null,
+  "top_n": 25,
+  "tickers": [
+    "0A6X.L",
+    "0HL8.L",
+    "AESGENER.SN",
+    "AGUAS-A.SN",
+    "0A7W.L",
+    "17SA.F",
+    "06L.SG",
+    "07K.F",
+    "0I3G.L",
+    "0TD7.L",
+    "0U8N.L",
+    "9IFA.F",
+    "ABQK.QA",
+    "AHCS.QA",
+    "1010.SR",
+    "1020.SR",
+    "29P.F",
+    "29P.MU"
+  ],
+  "weights": {
+    "us_down_mean": 0.4,
+    "us_down_outperf_rate": 0.25,
+    "overall_cagr": 0.15,
+    "drawdown_penalty": 0.2,
+    "qualitative": 0.0
+  },
+  "qualitative": {},
+  "universe_meta_csv": "/workspace/analysis/universe_meta.small.csv"
+}
