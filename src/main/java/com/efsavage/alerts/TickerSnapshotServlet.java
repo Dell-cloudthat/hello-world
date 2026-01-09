@@ -5,56 +5,57 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Thin bridge from the WAR to the Python analytics code.
+ * Returns JSON details for a selected ticker.
  *
- * This servlet executes:
- *   python3 analysis/alert_snapshot.py
- *
- * and returns stdout as application/json.
- *
- * Note: This assumes you're running the webapp from the repo root
- * (e.g., via "mvn jetty:run") so relative paths resolve.
+ * GET /api/ticker-snapshot?ticker=KSA
  */
-public class AlertSnapshotServlet extends HttpServlet {
+public class TickerSnapshotServlet extends HttpServlet {
+  private static final Pattern SAFE_TICKER = Pattern.compile("^[A-Za-z0-9\\.\\^\\-_=]{1,25}$");
+
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
     resp.setCharacterEncoding("UTF-8");
     resp.setContentType("application/json");
 
-    File baseDir = findRepoRootForOtherServlets();
-    File script = new File(baseDir, "analysis/alert_snapshot.py");
+    String ticker = req.getParameter("ticker");
+    if (ticker == null) {
+      resp.setStatus(400);
+      resp.getWriter().write("{\"error\":\"Missing required query param: ticker\"}");
+      return;
+    }
+    ticker = ticker.trim();
+    if (!SAFE_TICKER.matcher(ticker).matches()) {
+      resp.setStatus(400);
+      resp.getWriter().write("{\"error\":\"Invalid ticker format\"}");
+      return;
+    }
+
+    File baseDir = AlertSnapshotServlet.findRepoRootForOtherServlets();
+    File script = new File(baseDir, "analysis/ticker_snapshot.py");
     if (!script.exists()) {
       resp.setStatus(500);
       resp.getWriter()
           .write(
-              "{\"error\":\"Could not locate analysis/alert_snapshot.py\",\"baseDir\":"
+              "{\"error\":\"Could not locate analysis/ticker_snapshot.py\",\"baseDir\":"
                   + jsonEscape(baseDir.getAbsolutePath())
                   + "}");
       return;
     }
 
     ProcessBuilder pb =
-        new ProcessBuilder("python3", script.getAbsolutePath());
+        new ProcessBuilder("python3", script.getAbsolutePath(), "--ticker", ticker.toUpperCase());
     pb.directory(baseDir);
     pb.redirectErrorStream(true);
 
-    Process p;
-    try {
-      p = pb.start();
-    } catch (IOException e) {
-      resp.setStatus(500);
-      resp.getWriter()
-          .write(
-              "{\"error\":\"Failed to start python3. Ensure python3 is installed and available.\"}");
-      return;
-    }
+    Process p = pb.start();
 
     StringBuilder out = new StringBuilder();
     try (BufferedReader r =
@@ -71,7 +72,7 @@ public class AlertSnapshotServlet extends HttpServlet {
         resp.setStatus(500);
         resp.getWriter()
             .write(
-                "{\"error\":\"Python snapshot script failed\",\"exitCode\":"
+                "{\"error\":\"Python ticker snapshot failed\",\"exitCode\":"
                     + code
                     + ",\"output\":"
                     + jsonEscape(out.toString())
@@ -89,27 +90,8 @@ public class AlertSnapshotServlet extends HttpServlet {
     resp.getWriter().write(out.toString());
   }
 
-  static File findRepoRootForOtherServlets() {
-    // Start from the JVM working directory and walk up a few parents until we find pom.xml + analysis/
-    File d = new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
-    for (int i = 0; i < 6; i++) {
-      File pom = new File(d, "pom.xml");
-      File analysisDir = new File(d, "analysis");
-      if (pom.exists() && analysisDir.isDirectory()) {
-        return d;
-      }
-      File parent = d.getParentFile();
-      if (parent == null) {
-        break;
-      }
-      d = parent;
-    }
-    // Fallback: current directory
-    return new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
-  }
-
+  // Minimal JSON escape for error payloads
   private static String jsonEscape(String s) {
-    // Minimal JSON string escape; enough for error payload.
     String escaped =
         s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     return "\"" + escaped + "\"";

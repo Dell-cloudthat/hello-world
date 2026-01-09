@@ -59,6 +59,7 @@
 
   <div class="card" style="margin-top: 14px;">
     <div class="muted">Buy list (top candidates)</div>
+    <div class="muted small">Click a row to load details. Use compare to overlay multiple tickers.</div>
     <table>
       <thead>
         <tr><th>Ticker</th><th>Name</th><th>Country</th><th>Link</th></tr>
@@ -67,6 +68,35 @@
         <tr><td colspan="4" class="muted">Loading…</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="row" style="margin-top: 14px;">
+    <div class="card">
+      <div class="muted">Selected ticker</div>
+      <div id="selTitle" class="kpi" style="font-size: 22px;">—</div>
+      <div class="muted small" id="selAsOf"></div>
+      <div style="margin-top: 10px;">
+        <canvas id="selChart" width="900" height="260"></canvas>
+      </div>
+      <table style="margin-top: 10px;">
+        <tbody id="selMetrics">
+          <tr><td class="muted">Click a ticker to load metrics…</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top: 10px;">
+        <button id="addCompare" disabled>Add to compare</button>
+        <span class="muted small" id="compareHint"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Compare (normalized to 100)</div>
+      <div class="muted small">Up to 5 tickers. Click a chip to remove.</div>
+      <div id="compareChips" style="margin-top: 8px;"></div>
+      <div style="margin-top: 10px;">
+        <canvas id="cmpChart" width="900" height="260"></canvas>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -127,6 +157,135 @@
       ctx.stroke();
     }
 
+    function drawMultiChart(canvasId, seriesList, options) {
+      // seriesList: [{name, values}]
+      const c = document.getElementById(canvasId);
+      const ctx = c.getContext("2d");
+      const w = c.width, h = c.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 44, padR = 10, padT = 10, padB = 24;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+
+      const all = [];
+      for (const s of seriesList) all.push(...s.values);
+      const minV = Math.min(...all);
+      const maxV = Math.max(...all);
+      const range = (maxV - minV) || 1;
+
+      // Axes
+      ctx.strokeStyle = "#ddd";
+      ctx.beginPath();
+      ctx.moveTo(padL, padT);
+      ctx.lineTo(padL, padT + innerH);
+      ctx.lineTo(padL + innerW, padT + innerH);
+      ctx.stroke();
+
+      // Y ticks
+      ctx.fillStyle = "#666";
+      ctx.font = "12px Arial";
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + innerH - (i / 4) * innerH;
+        const v = minV + (i / 4) * range;
+        ctx.strokeStyle = "#f0f0f0";
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(padL + innerW, y);
+        ctx.stroke();
+        ctx.fillText(options.formatY(v), 6, y + 4);
+      }
+
+      const palette = ["#1256cc", "#cc1f1a", "#0f7b6c", "#7b3fe4", "#c45b00"];
+      seriesList.forEach((s, idx) => {
+        ctx.strokeStyle = palette[idx % palette.length];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < s.values.length; i++) {
+          const x = padL + (i / (s.values.length - 1)) * innerW;
+          const y = padT + innerH - ((s.values[i] - minV) / range) * innerH;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+
+      // Legend
+      ctx.font = "12px Arial";
+      seriesList.forEach((s, idx) => {
+        ctx.fillStyle = palette[idx % palette.length];
+        ctx.fillRect(padL + idx * 120, 6, 10, 10);
+        ctx.fillStyle = "#111";
+        ctx.fillText(s.name, padL + idx * 120 + 14, 15);
+      });
+    }
+
+    let selectedTicker = null;
+    let selectedSnapshot = null;
+    let compare = []; // [{ticker, seriesDates, seriesValues}]
+
+    async function loadTicker(ticker) {
+      selectedTicker = ticker;
+      selectedSnapshot = null;
+      document.getElementById("selTitle").textContent = ticker;
+      document.getElementById("selAsOf").textContent = "Loading…";
+      document.getElementById("selMetrics").innerHTML = "<tr><td class='muted'>Loading…</td></tr>";
+      document.getElementById("addCompare").disabled = true;
+      document.getElementById("compareHint").textContent = "";
+
+      const url = "<%= request.getContextPath() %>/api/ticker-snapshot?ticker=" + encodeURIComponent(ticker);
+      const res = await fetch(url, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || !data || !data.ticker) {
+        document.getElementById("selAsOf").textContent = "Error loading ticker: " + (data && data.error ? data.error : ("HTTP " + res.status));
+        return;
+      }
+      selectedSnapshot = data;
+      document.getElementById("selTitle").textContent = data.ticker + "  (last: " + fmt(data.price.last) + ")";
+      document.getElementById("selAsOf").textContent = "As of " + data.as_of;
+
+      const m = [];
+      m.push(["3m return", pct(data.returns.r_3m)]);
+      m.push(["6m return", pct(data.returns.r_6m)]);
+      m.push(["12m return", pct(data.returns.r_12m)]);
+      m.push(["Max DD (1y)", pct(data.risk.max_drawdown_1y)]);
+      m.push(["Max DD (3y)", pct(data.risk.max_drawdown_3y)]);
+      m.push(["Beta vs SPX (3y, weekly)", (data.market.beta_3y_weekly == null ? "—" : (Math.round(data.market.beta_3y_weekly * 100) / 100))]);
+      m.push(["Corr vs SPX (3y, weekly)", (data.market.corr_3y_weekly == null ? "—" : (Math.round(data.market.corr_3y_weekly * 100) / 100))]);
+
+      document.getElementById("selMetrics").innerHTML =
+        m.map(([k,v]) => "<tr><td><b>" + k + "</b></td><td>" + v + "</td></tr>").join("");
+
+      drawLineChart("selChart", data.series.norm_100, {
+        color: "#0f7b6c",
+        formatY: (v) => v.toFixed(0)
+      });
+
+      document.getElementById("addCompare").disabled = false;
+      document.getElementById("compareHint").textContent = compare.some(x => x.ticker === data.ticker) ? "(already in compare)" : "";
+    }
+
+    function renderCompare() {
+      const chips = document.getElementById("compareChips");
+      chips.innerHTML = "";
+      compare.forEach((c) => {
+        const b = document.createElement("button");
+        b.textContent = c.ticker + " ×";
+        b.style.marginRight = "8px";
+        b.onclick = () => { compare = compare.filter(x => x.ticker !== c.ticker); renderCompare(); };
+        chips.appendChild(b);
+      });
+
+      if (compare.length === 0) {
+        drawLineChart("cmpChart", [100,100], { color: "#ddd", formatY: (v)=>v.toFixed(0) });
+        return;
+      }
+
+      // Use shortest common length to keep x aligned
+      const minLen = Math.min(...compare.map(x => x.values.length));
+      const seriesList = compare.map(x => ({ name: x.ticker, values: x.values.slice(-minLen) }));
+      drawMultiChart("cmpChart", seriesList, { formatY: (v)=>v.toFixed(0) });
+    }
+
     async function refresh() {
       let res, data;
       try {
@@ -165,6 +324,8 @@
       tb.innerHTML = "";
       for (const c of data.candidates) {
         const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.onclick = () => loadTicker(c.ticker);
         const t = document.createElement("td"); t.textContent = c.ticker;
         const n = document.createElement("td"); n.textContent = c.name || "";
         const co = document.createElement("td"); co.textContent = c.country || "";
@@ -189,7 +350,21 @@
       });
     }
 
+    document.getElementById("addCompare").onclick = () => {
+      if (!selectedSnapshot) return;
+      const t = selectedSnapshot.ticker;
+      if (compare.some(x => x.ticker === t)) return;
+      if (compare.length >= 5) {
+        document.getElementById("compareHint").textContent = "(compare limit: 5)";
+        return;
+      }
+      compare.push({ ticker: t, values: selectedSnapshot.series.norm_100 });
+      renderCompare();
+      document.getElementById("compareHint").textContent = "";
+    };
+
     refresh();
+    renderCompare();
     setInterval(refresh, 60000);
   </script>
 </body>

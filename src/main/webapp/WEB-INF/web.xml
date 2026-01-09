@@ -13,4 +13,14 @@
 		<servlet-name>alertSnapshot</servlet-name>
 		<url-pattern>/api/alert-snapshot</url-pattern>
 	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>tickerSnapshot</servlet-name>
+		<servlet-class>com.efsavage.alerts.TickerSnapshotServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>tickerSnapshot</servlet-name>
+		<url-pattern>/api/ticker-snapshot</url-pattern>
+	</servlet-mapping>
 </web-app>
