@@ -128,8 +128,23 @@
     }
 
     async function refresh() {
-      const res = await fetch("<%= request.getContextPath() %>/api/alert-snapshot", { cache: "no-store" });
-      const data = await res.json();
+      let res, data;
+      try {
+        res = await fetch("<%= request.getContextPath() %>/api/alert-snapshot", { cache: "no-store" });
+        data = await res.json();
+      } catch (e) {
+        setPill("WAIT");
+        document.getElementById("asof").textContent = "API error: " + (e && e.message ? e.message : String(e));
+        return;
+      }
+
+      if (!res.ok || !data || !data.signal) {
+        setPill("WAIT");
+        const msg = data && data.error ? data.error : ("HTTP " + res.status);
+        const detail = data && data.output ? (" | " + data.output) : "";
+        document.getElementById("asof").textContent = "Snapshot error: " + msg + detail;
+        return;
+      }
 
       setPill(data.signal.status);
       document.getElementById("alloc").textContent = data.signal.recommended_allocation_pct_of_target + "%";

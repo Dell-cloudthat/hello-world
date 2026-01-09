@@ -1,6 +1,7 @@
 package com.efsavage.alerts;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +28,21 @@ public class AlertSnapshotServlet extends HttpServlet {
     resp.setCharacterEncoding("UTF-8");
     resp.setContentType("application/json");
 
-    ProcessBuilder pb = new ProcessBuilder("python3", "analysis/alert_snapshot.py");
+    File baseDir = findRepoRoot();
+    File script = new File(baseDir, "analysis/alert_snapshot.py");
+    if (!script.exists()) {
+      resp.setStatus(500);
+      resp.getWriter()
+          .write(
+              "{\"error\":\"Could not locate analysis/alert_snapshot.py\",\"baseDir\":"
+                  + jsonEscape(baseDir.getAbsolutePath())
+                  + "}");
+      return;
+    }
+
+    ProcessBuilder pb =
+        new ProcessBuilder("python3", script.getAbsolutePath());
+    pb.directory(baseDir);
     pb.redirectErrorStream(true);
 
     Process p;
@@ -72,6 +87,25 @@ public class AlertSnapshotServlet extends HttpServlet {
 
     resp.setStatus(200);
     resp.getWriter().write(out.toString());
+  }
+
+  private static File findRepoRoot() {
+    // Start from the JVM working directory and walk up a few parents until we find pom.xml + analysis/
+    File d = new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
+    for (int i = 0; i < 6; i++) {
+      File pom = new File(d, "pom.xml");
+      File analysisDir = new File(d, "analysis");
+      if (pom.exists() && analysisDir.isDirectory()) {
+        return d;
+      }
+      File parent = d.getParentFile();
+      if (parent == null) {
+        break;
+      }
+      d = parent;
+    }
+    // Fallback: current directory
+    return new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
   }
 
   private static String jsonEscape(String s) {
